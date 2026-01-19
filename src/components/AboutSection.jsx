@@ -1,84 +1,92 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { X, Eye, Calendar, Palette } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
-// --- DUMMY DATA FOR ARTWORK ---
-const artPieces = [
-  {
-    id: 1,
-    src: "/images/drawing1.webp",
-    title: "The Gaze Beneath",
-    description:
-      "Always excited when drawing detailed eyes, as it showcases true artistic skill and creativity. Each line and shade brings emotion to life, reflecting talent and passion",
-    medium: "Charcoal",
-    year: "2025",
-    size: "A4 ( 21.0 cm x 29.7 cm)",
-  },
-  {
-    id: 2,
-    src: "/images/drawing2.jpg",
-    title: "Whispers of Light",
-    description:
-      "A door opens silently, revealing nothing but endless dark shadows",
-    medium: "Charcoal",
-    year: "2025",
-    size: "A6 ( 10.5 cm x 14.5 cm)",
-  },
-  {
-    id: 3,
-    src: "/images/drawing3.jpg",
-    title: "Beacon in the Storm",
-    description:
-      "Water splashes through mountains, guided gently by a distant lighthouse",
-    medium: "Charcoal",
-    year: "2025",
-    size: "A6 ( 10.5 cm x 14.5 cm)",
-  },
-  {
-    id: 4,
-    src: "/images/drawing4.jpg",
-    title: "Eyes of the Wild",
-    description: "Slashing through the darkness with power!",
-    medium:
-      "Charcoal Generals 2B, 4B & 6B, Charcoal powder, Staedtler 2B,3B,4B,6B & 8B, Graphite powder",
-    year: "2025",
-    size: "A3 ( 29.7 cm x 42.0 cm)",
-  },
-  {
-    id: 5,
-    src: "/images/drawing5.jpg",
-    title: "Through the Lens",
-    description: "Eye..",
-    medium: "Graphite, Steadtler Mars lumograpgh :2B, 4B, 6B, Graphite powder",
-    year: "2025",
-    size: "A5 ( 14.8 cm x 21.0 cm)",
-  },
-  {
-    id: 6,
-    src: "/images/drawing6.webp",
-    title: "Spirit of Pandora",
-    description:
-      "Capturing the ethereal beauty and otherworldly essence of the Na’vi character from Avatar",
-    medium:
-      "Steadtler 6B, 4B, 2B, White gel pen, Charcoal Generals: 2B, 4B & 6B, Charcoal powder",
-    year: "2024",
-    size: "A4 ( 21.0 cm x 29.7 cm)",
-  },
-];
+/**
+ * ✅ CHANGE THESE IF NEEDED
+ */
+const BUCKET_NAME = "artworks"; // <-- your Supabase Storage bucket name
+
+/**
+ * Detect if a string is already a full URL
+ */
+const isHttpUrl = (value) => /^https?:\/\//i.test(value || "");
+
+/**
+ * Build an optimized public URL from a Supabase Storage path using transforms.
+ * If you already have a full URL stored, it returns it as-is.
+ */
+const getOptimizedUrl = (raw, { w = 900, h = 900, q = 70 } = {}) => {
+  if (!raw) return "";
+
+  // If it's already a URL, just return it
+  if (isHttpUrl(raw)) return raw;
+
+  // Otherwise treat it as a storage path in BUCKET_NAME
+  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(raw, {
+    transform: {
+      width: w,
+      height: h,
+      resize: "contain",
+      quality: q,
+      format: "webp",
+    },
+  });
+
+  return data?.publicUrl || "";
+};
+
+/**
+ * Prefetch images (warms browser cache)
+ */
+const prefetchImages = (items) => {
+  if (!Array.isArray(items)) return;
+  items.slice(0, 12).forEach((a) => {
+    if (!a?.src) return;
+    const img = new Image();
+    img.src = a.src;
+  });
+};
+
+/**
+ * ✅ Lazy image with skeleton placeholder
+ */
+const LazyImage = ({
+  src,
+  alt,
+  className = "",
+  loading = "lazy",
+  eager = false,
+}) => {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="relative w-full h-full">
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-gray-200" />
+      )}
+
+      <img
+        src={src}
+        alt={alt}
+        loading={eager ? "eager" : loading}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        className={`${className} ${
+          loaded ? "opacity-100" : "opacity-0"
+        } transition-opacity duration-500`}
+      />
+    </div>
+  );
+};
 
 // --- ARTWORK MODAL COMPONENT ---
 const ArtModal = ({ isOpen, onClose, artworks }) => {
   const [selectedArt, setSelectedArt] = useState(null);
 
-  // This useEffect hook controls body scrolling
+  // control body scroll
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-
-    // Cleanup function to restore scrolling when the component unmounts
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -95,7 +103,7 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
         className="relative bg-white w-full max-w-7xl h-[95vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Enhanced Header */}
+        {/* Header */}
         <div className="relative bg-gradient-to-r from-gray-50 to-white p-8 border-b border-gray-200">
           <button
             onClick={onClose}
@@ -107,7 +115,7 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
 
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-black mb-4">
-              Artist's Portfolio
+              Artist&apos;s Portfolio
             </h2>
             <div className="w-24 h-1 bg-black mx-auto rounded-full mb-4"></div>
             <p className="text-gray-600 text-lg">
@@ -142,7 +150,7 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
         {/* Gallery Content */}
         <div className="p-8 h-[calc(100%-200px)] overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {artworks.map((art, index) => (
+            {artworks.map((art) => (
               <div
                 key={art.id}
                 className="group relative overflow-hidden rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl transition-all duration-500 cursor-pointer"
@@ -152,7 +160,7 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
                 <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-400 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
 
                 <div className="relative bg-white rounded-2xl overflow-hidden">
-                  <img
+                  <LazyImage
                     src={art.src}
                     alt={art.title}
                     className="w-full h-80 object-cover transition-all duration-700 group-hover:scale-110"
@@ -184,35 +192,12 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
                     <Eye size={16} className="text-black" />
                   </div>
                 </div>
-
-                {/* Artwork number
-                <div className="absolute -top-3 -left-3 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                  {String(index + 1).padStart(2, '0')}
-                </div> */}
               </div>
             ))}
           </div>
 
-          {/* Bottom section */}
           <div className="mt-16 text-center">
-            <div className="inline-flex items-center space-x-4 px-8 py-4 bg-gray-50 rounded-full border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all duration-300 group cursor-pointer">
-              {/* <span className="font-semibold">View Complete Exhibition</span> */}
-              {/* <div className="w-8 h-8 bg-black group-hover:bg-white rounded-full flex items-center justify-center transition-colors">
-                <svg
-                  className="w-4 h-4 text-white group-hover:text-black transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </div> */}
-            </div>
+            <div className="inline-flex items-center space-x-4 px-8 py-4 bg-gray-50 rounded-full border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all duration-300 group cursor-pointer" />
           </div>
         </div>
       </div>
@@ -220,7 +205,7 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
       {/* Individual artwork detail modal */}
       {selectedArt && (
         <div
-          className="fixed inset-0 bg-black/95 backdrop-blur-lg z-60 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[60] flex items-center justify-center p-4"
           onClick={() => setSelectedArt(null)}
         >
           <div
@@ -236,9 +221,10 @@ const ArtModal = ({ isOpen, onClose, artworks }) => {
 
             <div className="grid md:grid-cols-2 h-full">
               <div className="relative">
-                <img
+                <LazyImage
                   src={selectedArt.src}
                   alt={selectedArt.title}
+                  eager
                   className="w-full h-96 md:h-full object-cover"
                 />
               </div>
@@ -298,33 +284,51 @@ export default function AboutSection() {
   const [artworks, setArtworks] = useState([]);
   const [artLoading, setArtLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchArtworks = async () => {
-      try {
-        setArtLoading(true);
-        const { data, error } = await supabase
-          .from("artworks")
-          .select("*")
-          .order("id", { ascending: true });
+  const normalizedArtworks = useMemo(() => {
+    return (artworks || []).map((a) => {
+      // pick your image field from DB
+      const raw =
+        a?.image_path || a?.src || a?.image_url || a?.url || a?.drawing_url;
 
-        if (error) throw error;
-        setArtworks(data || []);
-      } catch (e) {
-        console.error("Fetch artworks error:", e?.message || e);
-      } finally {
-        setArtLoading(false);
-      }
-    };
+      return {
+        id: a?.id,
+        title: a?.title || "Untitled",
+        description: a?.description || "",
+        medium: a?.medium || "",
+        year: a?.year || "",
+        size: a?.size || "",
+        // ✅ optimized image
+        src: getOptimizedUrl(raw, { w: 900, h: 900, q: 70 }),
+        // keep original too if you want later
+        _raw: raw,
+      };
+    });
+  }, [artworks]);
 
-    fetchArtworks();
+  const fetchArtworks = useCallback(async () => {
+    try {
+      setArtLoading(true);
+      const { data, error } = await supabase
+        .from("artworks")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) throw error;
+      setArtworks(data || []);
+    } catch (e) {
+      console.error("Fetch artworks error:", e?.message || e);
+    } finally {
+      setArtLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchArtworks();
+  }, [fetchArtworks]);
 
   return (
     <>
-      <section
-        id="about"
-        className="py-24 px-6 bg-white relative overflow-hidden"
-      >
+      <section id="about" className="py-24 px-6 bg-white relative overflow-hidden">
         {/* Decorative background elements */}
         <div className="absolute top-20 left-10 w-32 h-32 bg-gray-100 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-40 h-40 bg-gray-200 rounded-full blur-3xl"></div>
@@ -349,6 +353,8 @@ export default function AboutSection() {
                   src="/images/melvinsir.jpg"
                   alt="Portrait of the art teacher, Melvinraj C R"
                   className="relative w-full h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
@@ -367,9 +373,11 @@ export default function AboutSection() {
                   MELVINRAJ C R
                 </span>
               </div>
+
               <h3 className="text-3xl font-bold text-gray-800 leading-tight">
                 Artist & Creative Instructor
               </h3>
+
               <div className="flex items-center space-x-4 py-4">
                 <div className="flex-shrink-0">
                   <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center shadow-lg">
@@ -380,49 +388,61 @@ export default function AboutSection() {
                   <p className="text-gray-800 font-semibold">
                     Years of Experience
                   </p>
-                  {/* <p className="text-gray-600 text-sm">
-                    Classical & Contemporary Art
-                  </p> */}
                 </div>
               </div>
+
               <div className="space-y-4">
                 <p className="text-gray-700 leading-relaxed text-lg">
-                An Assistant Professor at Jyothi Engineering College and a seasoned artist with 10+ years of experience, he is committed to fostering creativity in learners of all ages. Combining five years of experience in children’s art education with a passion for transformative teaching, his sessions—available both online and offline—go beyond the basics. He empowers students to build confidence and explore their potential, turning every lesson into a joyful, creative adventure.
+                  An Assistant Professor at Jyothi Engineering College and a
+                  seasoned artist with 10+ years of experience, he is committed
+                  to fostering creativity in learners of all ages. Combining five
+                  years of experience in children’s art education with a passion
+                  for transformative teaching, his sessions—available both online
+                  and offline—go beyond the basics. He empowers students to build
+                  confidence and explore their potential, turning every lesson
+                  into a joyful, creative adventure.
                 </p>
-                {/* <p className="text-gray-600 leading-relaxed">
-                  From foundational drawing skills to advanced oil painting techniques, my classes are designed to be engaging, informative, and, most importantly, fun.
-                </p> */}
               </div>
+
               <div className="pt-6">
-                <h4 className="text-gray-800 font-semibold mb-3">
-                  Specialties
-                </h4>
+                <h4 className="text-gray-800 font-semibold mb-3">Specialties</h4>
                 <div className="flex flex-wrap gap-2">
-                  {["Pencil Drawing", "Charcoal", "Graphite"].map(
-                    (skill, index) => (
-                      <span
-                        key={skill}
-                        className="px-4 py-2 bg-gray-100 text-gray-800 rounded-full text-sm font-medium border border-gray-300 hover:border-gray-500 hover:bg-gray-200 transition-colors cursor-default"
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        {skill}
-                      </span>
-                    )
-                  )}
+                  {["Pencil Drawing", "Charcoal", "Graphite"].map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-4 py-2 bg-gray-100 text-gray-800 rounded-full text-sm font-medium border border-gray-300 hover:border-gray-500 hover:bg-gray-200 transition-colors cursor-default"
+                    >
+                      {skill}
+                    </span>
+                  ))}
                 </div>
               </div>
+
               <div className="pt-6">
                 <button
-  onClick={() => setIsModalOpen(true)}
-  disabled={artLoading}
-  className="inline-flex items-center px-8 py-3 bg-black text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:bg-gray-800 transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {artLoading ? "Loading..." : "View My Work"}
-  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-  </svg>
-</button>
-
+                  onMouseEnter={() => prefetchImages(normalizedArtworks)}
+                  onClick={() => {
+                    prefetchImages(normalizedArtworks);
+                    setIsModalOpen(true);
+                  }}
+                  disabled={artLoading}
+                  className="inline-flex items-center px-8 py-3 bg-black text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:bg-gray-800 transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {artLoading ? "Loading..." : "View My Work"}
+                  <svg
+                    className="ml-2 w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -430,11 +450,10 @@ export default function AboutSection() {
       </section>
 
       <ArtModal
-  isOpen={isModalOpen}
-  onClose={() => setIsModalOpen(false)}
-  artworks={artworks}
-/>
-
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        artworks={normalizedArtworks}
+      />
     </>
   );
 }
