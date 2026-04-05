@@ -37,10 +37,31 @@ export default function ContactSection() {
   const headline = info?.headline || "Get In Touch";
   const subheadline =
     info?.subheadline ||
-    "Have a question, a project idea, or just want to say hello? Drop us a line, we’d love to hear from you.";
+    "Have a question, a project idea, or just want to say hello? Drop us a line, we'd love to hear from you.";
   const email = info?.email || "hello@artventure.com";
   const phone = info?.phone || "+1 (234) 567-890";
   const address = info?.address || "123 Art Street, Creativity City, 12345";
+  const mapUrl = info?.map_url || ""; // ✅ Read map_url from Supabase
+
+  // ✅ Convert a regular Google Maps URL to an embeddable src
+  const getEmbedUrl = (url) => {
+    if (!url) return "";
+
+    // Already an embed URL
+    if (url.includes("/maps/embed")) return url;
+
+    // Convert share/place URLs to embed format
+    // e.g. https://maps.google.com/?q=... or https://www.google.com/maps/place/...
+    try {
+      const encoded = encodeURIComponent(url);
+      // Use the place embed with q param for general URLs
+      return `https://www.google.com/maps?output=embed&q=${encoded}`;
+    } catch {
+      return url;
+    }
+  };
+
+  const embedSrc = getEmbedUrl(mapUrl);
 
   // ✅ Controlled inputs
   const handleChange = (e) => {
@@ -56,7 +77,6 @@ export default function ContactSection() {
     const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
     const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-    // quick env check
     if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
       alert("EmailJS env keys missing. Check .env and restart the dev server.");
       return;
@@ -65,14 +85,10 @@ export default function ContactSection() {
     setSending(true);
 
     try {
-      // IMPORTANT: keys must match your EmailJS TEMPLATE variables!
-      // If your template variables are different, rename these keys accordingly.
       const params = {
         from_name: form.name,
         from_email: form.email,
         message: form.message,
-
-        // Optional: include your studio contact email in the email body
         to_email: email,
       };
 
@@ -182,15 +198,10 @@ export default function ContactSection() {
                   </button>
                 </div>
               </form>
-
-              {/* <p className="mt-4 text-xs text-gray-500">
-                Note: EmailJS template variables must match:
-                <code className="ml-1">from_name, from_email, message</code>
-              </p> */}
             </div>
           </div>
 
-          {/* Right: Info */}
+          {/* Right: Info + Map */}
           <div className="space-y-8 mt-8 lg:mt-0">
             <div className="flex items-start space-x-4 group">
               <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center group-hover:bg-black transition-colors duration-300">
@@ -234,6 +245,22 @@ export default function ContactSection() {
                 <p className="text-black font-semibold">{address}</p>
               </div>
             </div>
+
+            {/* ✅ Google Map Embed — only shown when map_url is set */}
+            {embedSrc && (
+              <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-md w-full h-64">
+                <iframe
+                  src={embedSrc}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Studio Location"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
