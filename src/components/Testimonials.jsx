@@ -23,13 +23,11 @@ const StarRating = ({ rating }) => (
 
 function getInitials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-
   if (parts.length === 0) return "U";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase(); // e.g., "Abhijith" -> "AB"
-
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   const first = parts[0][0] || "";
   const last = parts[parts.length - 1][0] || "";
-  return (first + last).toUpperCase(); // e.g., "Abhijith Suresh" -> "AS"
+  return (first + last).toUpperCase();
 }
 
 
@@ -123,8 +121,6 @@ function ImageCropModal({
 
   if (!open || !file) return null;
 
-  
-
   return (
     <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl overflow-hidden shadow-2xl">
@@ -195,9 +191,11 @@ function ImageCropModal({
 
 // -------------------- MAIN COMPONENT --------------------
 export default function Testimonials() {
+  
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const shouldScroll = testimonials.length > 4;
 
   // Upload states
   const [profileFile, setProfileFile] = useState(null);
@@ -215,45 +213,42 @@ export default function Testimonials() {
 
   // Cropping flow for drawings
   const [cropOpen, setCropOpen] = useState(false);
-  const [cropQueue, setCropQueue] = useState([]); // original selected files
+  const [cropQueue, setCropQueue] = useState([]);
   const [cropIndex, setCropIndex] = useState(0);
 
   // Optional: enable/disable cropping
   const [enableCrop, setEnableCrop] = useState(true);
   const [contact, setContact] = useState({ name: "", email: "", message: "" });
-const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState(false);
 
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setContact((p) => ({ ...p, [name]: value }));
+  };
 
-const handleContactChange = (e) => {
-  const { name, value } = e.target;
-  setContact((p) => ({ ...p, [name]: value }));
-};
-
-const handleContactSubmit = async (e) => {
-  e.preventDefault();
-  setSending(true);
-
-  try {
-    await emailjs.send(
-      "YOUR_SERVICE_ID",
-      "YOUR_TEMPLATE_ID",
-      {
-        from_name: contact.name,
-        from_email: contact.email,
-        message: contact.message,
-      },
-      "YOUR_PUBLIC_KEY"
-    );
-
-    alert("Message sent successfully!");
-    setContact({ name: "", email: "", message: "" });
-  } catch (err) {
-    console.error(err);
-    alert("Failed to send message. Please try again.");
-  } finally {
-    setSending(false);
-  }
-};
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    try {
+      await emailjs.send(
+        "YOUR_SERVICE_ID",
+        "YOUR_TEMPLATE_ID",
+        {
+          from_name: contact.name,
+          from_email: contact.email,
+          message: contact.message,
+        },
+        "YOUR_PUBLIC_KEY"
+      );
+      alert("Message sent successfully!");
+      setContact({ name: "", email: "", message: "" });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send message. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -268,7 +263,7 @@ const handleContactSubmit = async (e) => {
 
   async function loadReviews() {
     try {
-      const data = await testimonialService.getAll(); // ✅ no approval filter
+      const data = await testimonialService.getAll();
       setTestimonials(data || []);
     } catch (err) {
       console.error("Fetch error:", err?.message || err);
@@ -277,7 +272,7 @@ const handleContactSubmit = async (e) => {
     }
   }
 
-  // Carousel Logic
+  // Gallery carousel
   const nextImage = (e) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % selectedGallery.length);
@@ -295,17 +290,14 @@ const handleContactSubmit = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Set titles as before
     setDrawingTitles(files.map((f) => f.name.replace(/\.[^/.]+$/, "")));
 
     if (!enableCrop) {
-      // No cropping: use original files directly
       setDrawingFiles(files);
       return;
     }
 
-    // Cropping ON: reset and start crop queue
-    setDrawingFiles([]); // important: clear old
+    setDrawingFiles([]);
     setCropQueue(files);
     setCropIndex(0);
     setCropOpen(true);
@@ -316,7 +308,6 @@ const handleContactSubmit = async (e) => {
     setIsSubmitting(true);
 
     try {
-      // Final course
       const finalCourse =
         formData.course === "Other" ? customCourse.trim() : formData.course;
 
@@ -326,7 +317,6 @@ const handleContactSubmit = async (e) => {
         return;
       }
 
-      // Validate titles count (only if drawings exist)
       if (drawingFiles.length > 0) {
         const trimmed = drawingTitles.map((t) => (t || "").trim());
         const hasEmpty = trimmed.some((t) => !t);
@@ -343,30 +333,25 @@ const handleContactSubmit = async (e) => {
         drawing_titles: drawingTitles.map((t) => (t || "").trim()),
       };
 
-      // submit() should return inserted row
       const created = await testimonialService.submit(
         payload,
         profileFile,
         drawingFiles
       );
 
-      // ✅ Immediately show it (no approval)
       if (created) {
         setTestimonials((prev) => [created, ...prev]);
       } else {
-        // fallback refetch
         await loadReviews();
       }
 
       alert("Success! Your review has been posted.");
 
-      // Reset
       setFormData({ name: "", quote: "", course: "Watercolor", stars: 5 });
       setCustomCourse("");
       setProfileFile(null);
       setDrawingFiles([]);
       setDrawingTitles([]);
-
       setCropQueue([]);
       setCropIndex(0);
       setCropOpen(false);
@@ -377,7 +362,6 @@ const handleContactSubmit = async (e) => {
     }
   };
 
-  // computed label in UI
   const drawingHint = useMemo(() => {
     if (!enableCrop) return "Multiple Allowed";
     return "Multiple Allowed (Crop enabled)";
@@ -388,6 +372,23 @@ const handleContactSubmit = async (e) => {
       id="testimonials"
       className="py-24 bg-gray-50 relative overflow-hidden"
     >
+      {/* Inject keyframe animation */}
+      <style>{`
+        @keyframes scrollLeft {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .testimonial-track {
+          animation: scrollLeft 35s linear infinite;
+        }
+        .testimonial-track:hover {
+          animation-play-state: paused;
+        }
+          .testimonial-track.paused {
+  animation-play-state: paused !important;
+}
+      `}</style>
+
       {/* Decorative background elements */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-gray-200 rounded-full blur-3xl opacity-50"></div>
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-gray-300 rounded-full blur-3xl opacity-30"></div>
@@ -404,119 +405,137 @@ const handleContactSubmit = async (e) => {
           </p>
         </div>
 
-        {/* --- Testimonial Grid --- */}
+        {/* --- Testimonial Infinite Scroll Carousel --- */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 mb-16">
-            {testimonials.map((item, index) => (
-              <div key={item.id || index} className="group relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-400 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-sm"></div>
+          <div
+  className="relative mb-16 overflow-hidden pt-8"
+  style={{
+    maskImage:
+      "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+    WebkitMaskImage:
+      "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+  }}
+>
+            <div
+  className={`flex gap-6 ${
+    shouldScroll ? "testimonial-track" : ""
+  } ${selectedGallery ? "paused" : ""}`}
+  style={{ width: "max-content" }}
+>
+              {/* Duplicate array for seamless infinite loop */}
+             {(shouldScroll
+  ? [...testimonials, ...testimonials]
+  : testimonials
+).map((item, index) => (
+                <div
+                  key={index}
+                  className="group relative"
+                  style={{ width: "300px", flexShrink: 0 }}
+                >
+                  <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-400 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-sm"></div>
 
-                <div className="relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-500 border border-gray-200 h-full flex flex-col">
-                  <div className="absolute -top-4 left-8">
-                    <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 text-white"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="absolute -top-2 -right-2">
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full border border-gray-300">
-                      {item.course}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-center mb-6">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full border-4 border-gray-100 group-hover:border-black transition-colors duration-300 overflow-hidden bg-gray-200 flex items-center justify-center">
-      {item.avatar_url ? (
-        <img
-          src={item.avatar_url}
-          alt={item.name || "User"}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            // if image URL broken, remove it so initials appear
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      ) : (
-        <span className="text-black font-black text-xl tracking-wider">
-          {getInitials(item.name)}
-        </span>
-      )}
-    </div>
-                      <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                  <div className="relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-500 border border-gray-200 h-full flex flex-col">
+                    <div className="absolute -top-4 left-8">
+                      <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                         <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          stroke="currentColor"
+                          className="w-4 h-4 text-white"
+                          fill="currentColor"
                           viewBox="0 0 24 24"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
+                          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
                         </svg>
                       </div>
                     </div>
-                  </div>
 
-                  <StarRating rating={item.stars} />
+                    <div className="absolute -top-2 -right-2">
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full border border-gray-300">
+                        {item.course}
+                      </span>
+                    </div>
 
-                  <blockquote className="text-gray-700 italic mb-6 leading-relaxed text-center flex-grow">
-                    "{item.quote}"
-                  </blockquote>
+                    <div className="flex justify-center mb-6">
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-4 border-gray-100 group-hover:border-black transition-colors duration-300 overflow-hidden bg-gray-200 flex items-center justify-center">
+                          {item.avatar_url ? (
+                            <img
+                              src={item.avatar_url}
+                              alt={item.name || "User"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="text-black font-black text-xl tracking-wider">
+                              {getInitials(item.name)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="text-center pt-4 border-t border-gray-100">
-                    <h3 className="font-bold text-lg text-black tracking-wide">
-                      {item.name}
-                    </h3>
-                    <div className="w-12 h-0.5 bg-black mx-auto mt-2"></div>
+                    <StarRating rating={item.stars} />
 
-                    {item.drawing_urls?.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const urls = Array.isArray(item.drawing_urls)
-                            ? item.drawing_urls
-                            : [];
-                          const titles = Array.isArray(item.drawing_titles)
-                            ? item.drawing_titles
-                            : [];
+                    <blockquote className="text-gray-700 italic mb-6 leading-relaxed text-center flex-grow">
+                      "{item.quote}"
+                    </blockquote>
 
-                          setSelectedGallery(
-                            urls.map((url, i) => ({
-                              url,
-                              title: titles[i] || `Drawing ${i + 1}`,
-                              student: item.name,
-                              course: item.course,
-                            }))
-                          );
-                          setCurrentImageIndex(0);
-                        }}
-                        className="mt-3 text-xs font-black uppercase border-b-2 border-black hover:text-gray-500 transition-colors"
-                      >
-                        Here are my drawings ({item.drawing_urls.length})
-                      </button>
-                    )}
-                  </div>
+                    <div className="text-center pt-4 border-t border-gray-100">
+                      <h3 className="font-bold text-lg text-black tracking-wide">
+                        {item.name}
+                      </h3>
+                      <div className="w-12 h-0.5 bg-black mx-auto mt-2"></div>
 
-                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                    {String(index + 1).padStart(2, "0")}
+                      {item.drawing_urls?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const urls = Array.isArray(item.drawing_urls)
+                              ? item.drawing_urls
+                              : [];
+                            const titles = Array.isArray(item.drawing_titles)
+                              ? item.drawing_titles
+                              : [];
+
+                            setSelectedGallery(
+                              urls.map((url, i) => ({
+                                url,
+                                title: titles[i] || `Drawing ${i + 1}`,
+                                student: item.name,
+                                course: item.course,
+                              }))
+                            );
+                            setCurrentImageIndex(0);
+                          }}
+                          className="mt-3 text-xs font-black uppercase border-b-2 border-black hover:text-gray-500 transition-colors"
+                        >
+                          Here are my drawings ({item.drawing_urls.length})
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -718,24 +737,20 @@ const handleContactSubmit = async (e) => {
       <ImageCropModal
         open={cropOpen}
         file={cropQueue[cropIndex]}
-        aspect={1} // square crop to fit gallery placeholder
+        aspect={1}
         title={`Crop Drawing ${cropIndex + 1} / ${cropQueue.length}`}
         onCancel={() => {
           setCropOpen(false);
           setCropQueue([]);
           setCropIndex(0);
-          setDrawingFiles([]); // cancel means none selected
+          setDrawingFiles([]);
         }}
         onDone={(croppedFile) => {
-          // Add cropped file
           setDrawingFiles((prev) => [...prev, croppedFile]);
-
-          // Next in queue
           const nextIndex = cropIndex + 1;
           if (nextIndex < cropQueue.length) {
             setCropIndex(nextIndex);
           } else {
-            // finished
             setCropOpen(false);
             setCropQueue([]);
             setCropIndex(0);
@@ -743,7 +758,7 @@ const handleContactSubmit = async (e) => {
         }}
       />
 
-      {/* --- Carousel Modal --- */}
+      {/* --- Carousel Modal (drawing gallery) --- */}
       {selectedGallery && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 sm:p-10"

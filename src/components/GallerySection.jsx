@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { X, Eye, Calendar, Palette } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
@@ -32,6 +32,109 @@ const LazyImage = ({ src, alt, className = "", eager = false }) => {
     </div>
   );
 };
+
+// ─── Mobile Carousel ──────────────────────────────────────────────────────────
+
+function MobileCarousel({ artworks, onSelect }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef(null);
+
+  const goTo = useCallback((index) => {
+    const clamped = Math.max(0, Math.min(artworks.length - 1, index));
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: clamped * el.offsetWidth, behavior: "smooth" });
+    setActiveIndex(clamped);
+  }, [artworks.length]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const index = Math.round(el.scrollLeft / el.offsetWidth);
+    setActiveIndex(index);
+  }, []);
+
+  return (
+    <div className="relative w-full mb-10">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        {artworks.map((art, i) => (
+          <div key={art.id} className="flex-shrink-0 w-full snap-center">
+            <div
+              onClick={() => onSelect(art)}
+              className="relative overflow-hidden rounded-2xl shadow-lg cursor-pointer bg-white mx-1"
+            >
+              <div className="relative w-full aspect-square bg-gray-50">
+                <LazyImage
+                  src={art.src}
+                  alt={art.title}
+                  className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                  eager={i === 0}
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                <h3 className="text-white text-lg font-bold mb-1 line-clamp-1">{art.title}</h3>
+                <div className="flex items-center gap-3">
+                  {art.medium && (
+                    <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                      <Palette size={13} /><span>{art.medium}</span>
+                    </div>
+                  )}
+                  {art.year && (
+                    <div className="flex items-center gap-1.5 text-white/70 text-xs">
+                      <Calendar size={12} /><span>{art.year}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md">
+                <Eye className="w-4 h-4 text-black" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-center gap-2 mt-5">
+        {artworks.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`rounded-full transition-all duration-300 ${
+              i === activeIndex ? "w-6 h-2 bg-black" : "w-2 h-2 bg-gray-300"
+            }`}
+          />
+        ))}
+      </div>
+
+      {activeIndex > 0 && (
+        <button
+          onClick={() => goTo(activeIndex - 1)}
+          className="absolute left-2 top-[calc(50%-32px)] -translate-y-1/2 w-9 h-9 bg-white/90 rounded-full shadow flex items-center justify-center"
+        >
+          <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      {activeIndex < artworks.length - 1 && (
+        <button
+          onClick={() => goTo(activeIndex + 1)}
+          className="absolute right-2 top-[calc(50%-32px)] -translate-y-1/2 w-9 h-9 bg-white/90 rounded-full shadow flex items-center justify-center"
+        >
+          <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ─── Main GallerySection ──────────────────────────────────────────────────────
 
@@ -95,7 +198,6 @@ export default function GallerySection() {
           </p>
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
@@ -106,8 +208,13 @@ export default function GallerySection() {
           </div>
         ) : (
           <>
-            {/* Artworks grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {/* Mobile: Carousel */}
+            <div className="block sm:hidden">
+              <MobileCarousel artworks={normalizedArtworks} onSelect={setSelectedArt} />
+            </div>
+
+            {/* Desktop: Grid (unchanged) */}
+            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
               {normalizedArtworks.map((art) => (
                 <div
                   key={art.id}
@@ -115,7 +222,6 @@ export default function GallerySection() {
                   className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer bg-white"
                 >
                   <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-400 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
-
                   <div className="relative bg-gray-50 rounded-xl overflow-hidden">
                     <div className="relative w-full aspect-square">
                       <LazyImage
@@ -124,9 +230,7 @@ export default function GallerySection() {
                         className="absolute inset-0 w-full h-full object-cover rounded-2xl transition-transform duration-700 group-hover:scale-105"
                       />
                     </div>
-
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-
                     <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">
                       <h3 className="text-white text-xl font-bold mb-1 line-clamp-1">{art.title}</h3>
                       {art.medium && (
@@ -140,7 +244,6 @@ export default function GallerySection() {
                         </div>
                       )}
                     </div>
-
                     <div className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 delay-200 transform scale-0 group-hover:scale-100 flex items-center justify-center shadow-lg">
                       <Eye className="w-5 h-5 text-black" />
                     </div>
@@ -169,50 +272,29 @@ export default function GallerySection() {
             </div>
           </>
         )}
-
-        {/* Stats */}
-        {/* <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">{normalizedArtworks.length}+</span>
-            </div>
-            <p className="text-gray-800 font-semibold">Artworks Created</p>
-            <p className="text-gray-500 text-sm">In Our Studio</p>
-          </div>
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">50+</span>
-            </div>
-            <p className="text-gray-800 font-semibold">Happy Students</p>
-            <p className="text-gray-500 text-sm">Learning Art</p>
-          </div>
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gray-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">25+</span>
-            </div>
-            <p className="text-gray-800 font-semibold">Techniques Taught</p>
-            <p className="text-gray-500 text-sm">Different Mediums</p>
-          </div>
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gray-400 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">5+</span>
-            </div>
-            <p className="text-gray-800 font-semibold">Years Teaching</p>
-            <p className="text-gray-500 text-sm">Professional Classes</p>
-          </div>
-        </div> */}
       </div>
 
       {/* Artwork detail modal */}
       {selectedArt && (
         <div
-          className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[200] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[200] flex items-end md:items-center justify-center"
           onClick={() => setSelectedArt(null)}
         >
+          {/*
+            Mobile: bottom sheet (slides up, rounded top corners, scrollable).
+            Desktop: centered card with max-width.
+          */}
           <div
-            className="relative bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] border border-gray-200"
+            className="relative bg-white w-full md:max-w-4xl md:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-200 overflow-y-auto"
+            style={{ maxHeight: "92dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Drag handle visible on mobile */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+
+            {/* Close button */}
             <button
               onClick={() => setSelectedArt(null)}
               className="absolute top-4 right-4 z-10 w-10 h-10 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-all duration-300"
@@ -220,29 +302,40 @@ export default function GallerySection() {
               <X size={16} />
             </button>
 
-            <div className="grid md:grid-cols-2 h-full">
-              <div className="relative bg-gray-100">
+            {/* Mobile: stacked vertically. Desktop: side by side. */}
+            <div className="flex flex-col md:grid md:grid-cols-2">
+
+              {/* Image — square on mobile, full height on desktop */}
+              <div className="relative bg-gray-100 w-full aspect-square flex-shrink-0">
                 <LazyImage
                   src={selectedArt.src}
                   alt={selectedArt.title}
                   eager
-                  className="w-full h-96 md:h-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
 
-              <div className="p-8 flex flex-col justify-center overflow-y-auto">
-                <h3 className="text-3xl font-bold text-black mb-6">{selectedArt.title}</h3>
-                <div className="space-y-3 mb-6">
+              {/* Details — fully visible, scrolls with the sheet if needed */}
+              <div className="p-6 md:p-8 flex flex-col justify-center">
+                <h3 className="text-2xl md:text-3xl font-bold text-black mb-5 pr-10">
+                  {selectedArt.title}
+                </h3>
+
+                <div className="space-y-3 mb-5">
                   {selectedArt.medium && (
                     <div className="flex items-center space-x-3">
                       <Palette size={18} className="text-gray-500 flex-shrink-0" />
-                      <span className="text-gray-700">Medium: <span className="font-medium text-gray-900">{selectedArt.medium}</span></span>
+                      <span className="text-gray-700">
+                        Medium: <span className="font-medium text-gray-900">{selectedArt.medium}</span>
+                      </span>
                     </div>
                   )}
                   {selectedArt.year && (
                     <div className="flex items-center space-x-3">
                       <Calendar size={18} className="text-gray-500 flex-shrink-0" />
-                      <span className="text-gray-700">Year: <span className="font-medium text-gray-900">{selectedArt.year}</span></span>
+                      <span className="text-gray-700">
+                        Year: <span className="font-medium text-gray-900">{selectedArt.year}</span>
+                      </span>
                     </div>
                   )}
                   {selectedArt.size && (
@@ -250,14 +343,18 @@ export default function GallerySection() {
                       <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                       </svg>
-                      <span className="text-gray-700">Size: <span className="font-medium text-gray-900">{selectedArt.size}</span></span>
+                      <span className="text-gray-700">
+                        Size: <span className="font-medium text-gray-900">{selectedArt.size}</span>
+                      </span>
                     </div>
                   )}
                 </div>
+
                 {selectedArt.description && (
-                  <p className="text-gray-600 leading-relaxed mb-6">{selectedArt.description}</p>
+                  <p className="text-gray-600 leading-relaxed mb-5">{selectedArt.description}</p>
                 )}
-                <div className="w-full h-0.5 bg-black"></div>
+
+                <div className="w-full h-0.5 bg-black mb-6 md:mb-0"></div>
               </div>
             </div>
           </div>
