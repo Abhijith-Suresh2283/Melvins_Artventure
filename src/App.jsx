@@ -7,6 +7,7 @@ import ClassesSection from './components/ClassesSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import Testimonials from './components/Testimonials';
+import StudentGallery from './components/StudentGallery';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <HeroSection />
         <AboutSection />
         <GallerySection />
+        <StudentGallery />
         <ClassesSection />
         <Testimonials />
         <ContactSection />

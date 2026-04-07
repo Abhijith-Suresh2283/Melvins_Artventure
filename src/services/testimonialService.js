@@ -80,14 +80,16 @@ async function submit(payload, profileFile, drawingFiles) {
 
   // 3) Insert row + return inserted row so UI can show immediately
   const insertRow = {
-    name: payload.name,
-    quote: payload.quote,
-    course: payload.course,
-    stars: payload.stars,
-    avatar_url,
-    drawing_urls,
-    drawing_titles: payload.drawing_titles || [],
-  };
+  name: payload.name,
+  age: payload.age ? Number(payload.age) : null,
+  place: payload.place || null,
+  quote: payload.quote,
+  course: payload.course,
+  stars: payload.stars,
+  avatar_url,
+  drawing_urls,
+  drawing_titles: payload.drawing_titles || [],
+};
 
   const { data, error } = await supabase
     .from("testimonials")

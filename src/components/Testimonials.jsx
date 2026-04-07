@@ -250,8 +250,11 @@ export default function Testimonials() {
     }
   };
 
+  // ✅ Added age and place to formData
   const [formData, setFormData] = useState({
     name: "",
+    age: "",
+    place: "",
     quote: "",
     course: "Watercolor",
     stars: 5,
@@ -327,9 +330,12 @@ export default function Testimonials() {
         }
       }
 
+      // ✅ age and place are included via spread of formData
       const payload = {
         ...formData,
         course: finalCourse,
+        // ✅ Ensure age is stored as a number (or null if empty)
+        age: formData.age !== "" ? Number(formData.age) : null,
         drawing_titles: drawingTitles.map((t) => (t || "").trim()),
       };
 
@@ -347,7 +353,8 @@ export default function Testimonials() {
 
       alert("Success! Your review has been posted.");
 
-      setFormData({ name: "", quote: "", course: "Watercolor", stars: 5 });
+      // ✅ Reset includes age and place
+      setFormData({ name: "", age: "", place: "", quote: "", course: "Watercolor", stars: 5 });
       setCustomCourse("");
       setProfileFile(null);
       setDrawingFiles([]);
@@ -503,6 +510,16 @@ export default function Testimonials() {
                       <h3 className="font-bold text-lg text-black tracking-wide">
                         {item.name}
                       </h3>
+
+                      {/* ✅ Show age and place on the card if available */}
+                      {(item.age || item.place) && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {[item.age ? `Age ${item.age}` : null, item.place]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      )}
+
                       <div className="w-12 h-0.5 bg-black mx-auto mt-2"></div>
 
                       {item.drawing_urls?.length > 0 && (
@@ -560,6 +577,7 @@ export default function Testimonials() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Row 1: Name + Course */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <input
                 type="text"
@@ -623,6 +641,31 @@ export default function Testimonials() {
                 required
               />
             )}
+
+            {/* ✅ Row 2: Age + Place */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <input
+                type="number"
+                placeholder="Age"
+                min="1"
+                max="120"
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-black focus:bg-white focus:ring-4 focus:ring-black/5 outline-none transition-all duration-300 hover:border-gray-400"
+                value={formData.age}
+                onChange={(e) =>
+                  setFormData({ ...formData, age: e.target.value })
+                }
+              />
+
+              <input
+                type="text"
+                placeholder="Place (City / Town)"
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-black focus:bg-white focus:ring-4 focus:ring-black/5 outline-none transition-all duration-300 hover:border-gray-400"
+                value={formData.place}
+                onChange={(e) =>
+                  setFormData({ ...formData, place: e.target.value })
+                }
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Profile */}
