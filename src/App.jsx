@@ -8,6 +8,7 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import Testimonials from './components/Testimonials';
 import StudentGallery from './components/StudentGallery';
+// import FAQSection from './components/FAQSection'; 
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <StudentGallery />
         <ClassesSection />
         <Testimonials />
+        {/* <FAQSection /> */}
         <ContactSection />
       </main>
       <Footer />

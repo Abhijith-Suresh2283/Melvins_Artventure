@@ -1,21 +1,23 @@
 import React from 'react';
 
-// Smooth scroll utility (same as Navbar)
+// Smooth scroll utility
 const scrollToSection = (id) => {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 };
 
-const heroImageUrl = 'https://i.pinimg.com/736x/00/90/de/0090de0ae7af7424bbe4fee07b71a0d8.jpg';
+// Replaced hotlinked Pinterest image with a local optimized webp image
+const heroImageUrl = '/images/hero-bg.webp'; 
 
 const HeroSection = () => { 
   return (
-    <div className="relative h-screen w-full">
+    <header className="relative h-screen w-full" aria-label="Hero Section">
       
-      {/* Background Image */}
+      {/* Background Image - Added descriptive alt text */}
       <img
         src={heroImageUrl}
-        alt="Artistic background with paint brushes"
+        alt="Creative workspace with painting tools and brushes"
         className="absolute inset-0 h-full w-full object-cover"
+        fetchPriority="high"
       />
 
       {/* Overlay */}
@@ -24,31 +26,32 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col justify-between p-8 text-white md:p-12">
         
-        {/* Top-left (empty for now) */}
         <div className="text-2xl font-bold tracking-wider"></div>
 
-        {/* Main Content */}
         <div className="flex flex-col items-start md:flex-row md:items-end md:justify-between">
           
-          {/* Heading */}
+          {/* SEO Optimized Heading */}
           <div className="max-w-xl">
             <h1 className="text-4xl font-bold leading-tight md:text-6xl">
-              Unleash your creativity and{' '}
-              <span className="italic">bring your vision to life.</span>
+              Master Drawing & Sketching with <span className="italic">Melvin's Artventure.</span>
             </h1>
+            {/* Added H2 for additional keyword context */}
+            <h2 className="mt-4 text-lg font-medium text-gray-200 md:text-xl">
+              Expert Online & Offline Art Classes by Melvinraj C R.
+            </h2>
           </div>
 
-          {/* Button */}
           <button
             onClick={() => scrollToSection('classes')}
             className="mt-8 rounded-full bg-white px-8 py-3 font-semibold tracking-wide text-black transition-transform duration-300 ease-in-out hover:scale-105 hover:bg-white md:mt-0"
+            aria-label="Enroll in art classes"
           >
             ENROLL NOW →
           </button>
 
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 
