@@ -134,13 +134,13 @@ export default function ClassesSection() {
 
         <div className="max-w-7xl mx-auto relative">
           {/* Section header */}
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold tracking-tight text-black mb-4">Art Classes</h2>
+          <header className="text-center mb-16">
+            <h2 className="text-5xl font-bold tracking-tight text-black mb-4">Online Art Classes</h2>
             <div className="w-24 h-1 bg-black mx-auto rounded-full mb-4"></div>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Find the perfect class to start or advance your artistic journey with our comprehensive course offerings.
+              Find the perfect class to start or advance your artistic journey. Our <strong>exclusive online drawing classes</strong> are designed for students to learn from <strong>zero to hero</strong>, offering a comprehensive course for you.
             </p>
-          </div>
+          </header>
 
           {/* Classes grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
@@ -203,13 +203,12 @@ export default function ClassesSection() {
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <h3 className="text-2xl font-bold text-black mb-4">Why Choose Our Classes?</h3>
+                <h3 className="text-2xl font-bold text-black mb-4">Why Choose Our Art Classes?</h3>
                 <ul className="space-y-3 text-gray-600">
                   {[
-                    "Small class sizes for personalized attention",
-                    "Professional-grade materials provided",
-                    "Flexible scheduling options available",
-                    "Take-home portfolio of your creations",
+                    "Expert-led techniques for pencil drawing & charcoal",
+                    "Flexible scheduling options for global timezones",
+                    "Dedicated support for both children and adult students",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>

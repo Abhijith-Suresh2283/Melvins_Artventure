@@ -60,13 +60,12 @@ export default function AboutSection() {
 
             <div className="space-y-4">
               <p className="text-gray-700 leading-relaxed text-lg">
-                An Assistant Professor at Jyothi Engineering College and a
-                seasoned artist with over a decade of experience, he is committed
+                As an Assistant Professor at Jyothi Engineering College in Thrissur, Kerala, and a
+                seasoned artist with over a decade of experience, Melvinraj is committed
                 to fostering creativity in learners of all ages. Combining five
                 years of specialized experience in children's art education with a passion
-                for transformative teaching, his sessions—available both <strong>online
-                and offline</strong>—go beyond the basics. He empowers students to build
-                confidence and explore their potential, turning every lesson
+                for transformative teaching, his sessions—available exclusively as <strong>global interactive online drawing classes</strong>—go beyond the basics, designed for students to learn from <strong>zero to hero</strong>. He empowers learners to build
+                confidence and explore their artistic potential securely from their homes, turning every lesson
                 into a joyful, creative adventure.
               </p>
             </div>

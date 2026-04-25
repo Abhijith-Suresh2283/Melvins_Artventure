@@ -30,14 +30,13 @@ const HeroSection = () => {
 
         <div className="flex flex-col items-start md:flex-row md:items-end md:justify-between">
           
-          {/* SEO Optimized Heading */}
           <div className="max-w-xl">
-            <h1 className="text-4xl font-bold leading-tight md:text-6xl">
-              Master Drawing & Sketching with <span className="italic">Melvin's Artventure.</span>
+            <h1 className="text-4xl font-bold leading-tight md:text-6xl text-white">
+              Online Drawing Classes at <span className="italic">Melvin's Artventure</span>
             </h1>
             {/* Added H2 for additional keyword context */}
             <h2 className="mt-4 text-lg font-medium text-gray-200 md:text-xl">
-              Expert Online & Offline Art Classes by Melvinraj C R.
+              Exclusive online sessions for students to learn from Zero to Hero in Pencil Drawing, Charcoal & Graphite, globally taught by expert Melvinraj C R.
             </h2>
           </div>
 

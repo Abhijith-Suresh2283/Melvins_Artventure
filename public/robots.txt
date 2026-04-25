@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://melvinsartventure.netlify.app/sitemap.xml
