@@ -8,11 +8,13 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import Testimonials from './components/Testimonials';
 import StudentGallery from './components/StudentGallery';
+import LaunchOverlay from './components/LaunchOverlay';
 // import FAQSection from './components/FAQSection'; 
 
 export default function App() {
   return (
     <div className="font-sans bg-[#FDFBF6] text-[#3C3C3C]">
+       <LaunchOverlay title="Melvin's Artventure" subtitle="Art Classes" />
       <Navbar />
       <main>
         <HeroSection />
