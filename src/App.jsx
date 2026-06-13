@@ -15,7 +15,6 @@ import LaunchOverlay_v1 from './components/LaunchOverlay_v1.jsx';
 export default function App() {
   return (
     <div className="font-sans bg-[#FDFBF6] text-[#3C3C3C]">
-       <LaunchOverlay_v1 title="Melvin's Artventure" subtitle="Art Classes" />
       <Navbar />
       <main>
         <HeroSection />
